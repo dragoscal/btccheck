@@ -1,12 +1,13 @@
 """
 Telegram Bot Server - Responds to /check commands
 Can be deployed to a free cloud service to run 24/7
+Updated for Railway deployment with environment variables
 """
 
 import os
 import logging
 import requests
-from flask import Flask
+from flask import Flask, request
 import json
 import re
 from datetime import datetime
@@ -18,15 +19,20 @@ logging.basicConfig(level=logging.INFO)
 # Initialize Flask app
 app = Flask(__name__)
 
-# Get configuration from environment or config file
-try:
-    with open('config.json', 'r') as f:
-        config = json.load(f)
-    BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN', config.get('bot_token', ''))
-    CHAT_ID = os.getenv('TELEGRAM_CHAT_ID', config.get('chat_id', ''))
-except:
-    BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN', '')
-    CHAT_ID = os.getenv('TELEGRAM_CHAT_ID', '')
+# Get configuration from environment variables
+# Railway provides these during runtime, not build time
+BOT_TOKEN = os.getenv('TELEGRAM_BOT_TOKEN', '')
+CHAT_ID = os.getenv('TELEGRAM_CHAT_ID', '')
+
+# Fallback to config.json if available (for local testing)
+if not BOT_TOKEN or not CHAT_ID:
+    try:
+        with open('config.json', 'r') as f:
+            config = json.load(f)
+            BOT_TOKEN = BOT_TOKEN or config.get('bot_token', '')
+            CHAT_ID = CHAT_ID or config.get('chat_id', '')
+    except:
+        pass
 
 TELEGRAM_API = f"https://api.telegram.org/bot{BOT_TOKEN}"
 
@@ -136,7 +142,7 @@ def check_atm_status():
 def webhook():
     """Handle incoming webhook from Telegram"""
     try:
-        data = requests.get_json()
+        data = request.get_json()
         
         if 'message' in data:
             message = data['message']
