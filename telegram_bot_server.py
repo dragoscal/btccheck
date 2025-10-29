@@ -102,7 +102,9 @@ def send_telegram_message(chat_id, text):
             'parse_mode': 'HTML'
         }
         response = requests.post(url, json=payload, timeout=10)
-        return response.json().get('ok', False)
+        result = response.json()
+        logging.info(f"Telegram response: {result}")
+        return result.get('ok', False)
     except Exception as e:
         logging.error(f"Error sending message: {e}")
         return False
