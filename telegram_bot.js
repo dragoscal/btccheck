@@ -104,13 +104,19 @@ class ATMTelegramBot {
                         if (result.ok) {
                             resolve(result.result);
                         } else {
-                            reject(new Error(result.description));
+                            console.error('Telegram API error:', result.description);
+                            resolve([]); // Return empty array instead of rejecting
                         }
                     } catch (e) {
-                        reject(e);
+                        // If JSON parse fails, log but don't crash
+                        console.error('Failed to parse Telegram response:', e.message);
+                        resolve([]); // Return empty array to continue
                     }
                 });
-            }).on('error', reject);
+            }).on('error', (err) => {
+                console.error('HTTPS error:', err.message);
+                resolve([]); // Don't reject, just return empty
+            });
         });
     }
 
