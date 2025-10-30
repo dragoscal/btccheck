@@ -1,0 +1,25 @@
+{
+  "name": "bitcoin-atm-monitor",
+  "version": "2.0.0",
+  "description": "Telegram bot to monitor Bitcoin ATM in Iași",
+  "main": "telegram_bot.js",
+  "scripts": {
+    "start": "node telegram_bot.js",
+    "test": "node index.js --test"
+  },
+  "keywords": [
+    "bitcoin",
+    "atm",
+    "monitor",
+    "telegram",
+    "bot"
+  ],
+  "author": "",
+  "license": "MIT",
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "dependencies": {
+    "puppeteer": "^21.11.0"
+  }
+}
