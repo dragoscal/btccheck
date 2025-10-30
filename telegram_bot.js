@@ -153,23 +153,25 @@ class ATMTelegramBot {
     async handleStart() {
         const mode = this.autoCheckEnabled ? '🤖 <b>AUTOMATIC MODE</b>' : '👤 <b>MANUAL MODE</b>';
         const description = this.autoCheckEnabled 
-            ? 'I automatically check the ATM every 3 hours and notify you of changes.'
-            : 'I remind you to check every 3 hours.';
+            ? 'I automatically check both ATMs every 1 hour and notify you of changes.'
+            : 'I remind you to check every 1 hour.';
         
         const message = `<b>🏧 Bitcoin ATM Monitor - Iași</b>
 
-Welcome! I monitor the Bitcoin ATM balance at Palas Mall.
+Welcome! I monitor Bitcoin ATM balances at both Iași locations.
 
 ${mode}
 ${description}
 
 <b>📋 Commands:</b>
-/check - Check ATM now
-/balance &lt;amount&gt; - Set balance manually (e.g., /balance 150)
-/status - Show last known balance
+/check - Check all ATMs now
+/status - Show last known balances
 /help - Show this message
 
-Ready to start! ${this.autoCheckEnabled ? 'I\'ll notify you when balance changes.' : 'Use /check to begin.'}`;
+<b>⏰ Auto-Check:</b>
+I automatically check every 1 hour and notify when balances change.
+
+Ready to monitor! ${this.autoCheckEnabled ? 'I\'ll notify you when balance changes.' : 'Use /check to begin.'}`;
         
         await this.sendMessage(message);
     }
@@ -441,20 +443,15 @@ Use /check to get the link, then send me the balance.`;
                     await this.handleCheck();
                     break;
                 
-                case '/balance':
-                    if (args.length === 0) {
-                        await this.sendMessage('❌ Please provide amount.\n\nExample: <code>/balance 150</code>');
-                    } else {
-                        await this.handleBalance(args[0]);
-                    }
-                    break;
-                
                 case '/status':
                     await this.handleStatus();
                     break;
                 
                 default:
-                    await this.sendMessage('❓ Unknown command. Use /help to see available commands.');
+                    // Silently ignore unknown commands in group
+                    if (!isFromGroup) {
+                        await this.sendMessage('❓ Unknown command. Use /help to see available commands.');
+                    }
             }
         } catch (error) {
             console.error('Error processing message:', error);
@@ -493,8 +490,13 @@ Use /check to get the link, then send me the balance.`;
                     
                     if (update.message) {
                         const chatId = update.message.chat.id.toString();
+                        const text = update.message.text || '';
+                        
+                        // Only process if it's a command (starts with /)
+                        const isCommand = text.startsWith('/');
+                        
                         // Accept commands from personal chat OR group
-                        if (chatId === this.chatId || chatId === this.groupChatId) {
+                        if (isCommand && (chatId === this.chatId || chatId === this.groupChatId)) {
                             await this.processMessage(update.message);
                         }
                     }
