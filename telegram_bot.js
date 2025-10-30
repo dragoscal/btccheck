@@ -18,7 +18,7 @@ class ATMTelegramBot {
         this.lastBalanceFile = 'last_balance.json';
         this.atmUrl = 'https://www.bitomat.com/ro/bitomaty/bancomat-bitcoin-iasi-palas-mall';
         this.lastUpdateId = 0;
-        this.checkInterval = 3 * 60 * 60 * 1000; // 3 hours in milliseconds
+        this.checkInterval = 1 * 60 * 60 * 1000; // 1 hour in milliseconds
         this.lastCheck = 0;
         this.autoCheckEnabled = !!scrapeAllIasiATMs;
     }
@@ -470,7 +470,7 @@ Use /check to get the link, then send me the balance.`;
         console.log('🤖 Bot started!');
         console.log(`📱 Chat ID: ${this.chatId}`);
         console.log(`🔧 Mode: ${this.autoCheckEnabled ? 'AUTOMATIC' : 'MANUAL'}`);
-        console.log('⏰ Check interval: Every 3 hours\n');
+        console.log('⏰ Check interval: Every 1 hour\n');
 
         // Delete any existing webhook (needed for polling)
         await this.deleteWebhook();
