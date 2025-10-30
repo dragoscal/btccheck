@@ -51,6 +51,32 @@ class ATMTelegramBot {
         });
     }
 
+    // Delete webhook (needed for polling mode)
+    async deleteWebhook() {
+        return new Promise((resolve, reject) => {
+            const path = `/bot${this.botToken}/deleteWebhook`;
+            
+            https.get(`https://api.telegram.org${path}`, (res) => {
+                let data = '';
+                res.on('data', (chunk) => data += chunk);
+                res.on('end', () => {
+                    try {
+                        const result = JSON.parse(data);
+                        if (result.ok) {
+                            console.log('✅ Webhook deleted');
+                            resolve(true);
+                        } else {
+                            console.log('⚠️  No webhook to delete');
+                            resolve(false);
+                        }
+                    } catch (e) {
+                        resolve(false);
+                    }
+                });
+            }).on('error', () => resolve(false));
+        });
+    }
+
     // Get updates from Telegram
     async getUpdates() {
         return new Promise((resolve, reject) => {
@@ -274,6 +300,9 @@ Use /check to get the link, then send me the balance.`;
         console.log('🤖 Bot started!');
         console.log(`📱 Chat ID: ${this.chatId}`);
         console.log('⏰ Reminders: Every 3 hours\n');
+
+        // Delete any existing webhook (needed for polling)
+        await this.deleteWebhook();
 
         // Send startup message
         await this.sendMessage('🤖 <b>Bot is now running!</b>\n\nUse /help to see commands.');
