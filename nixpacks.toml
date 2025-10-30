@@ -1,9 +1,0 @@
-[phases.setup]
-aptPkgs = []
-
-[phases.install]
-cmds = ["npm install --omit=optional"]
-
-[start]
-cmd = "node telegram_bot.js"
-
