@@ -30,7 +30,10 @@ async function scrapeIasiATM(customUrl = null) {
         
         // Only set executablePath on Linux/Railway
         if (process.platform === 'linux') {
-            launchOptions.executablePath = process.env.PUPPETEER_EXECUTABLE_PATH || '/usr/bin/chromium';
+            launchOptions.executablePath = process.env.PUPPETEER_EXECUTABLE_PATH || 
+                                          '/usr/bin/chromium-browser' || 
+                                          '/usr/bin/chromium' ||
+                                          'chromium-browser';
         }
         
         browser = await puppeteer.launch(launchOptions);
