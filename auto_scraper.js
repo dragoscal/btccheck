@@ -3,12 +3,16 @@
 async function scrapeIasiATM(customUrl = null) {
     let browser;
     try {
-        // Try puppeteer-core first (for Railway), fall back to puppeteer (for local)
+        // Use puppeteer-core on production, full puppeteer locally
         let puppeteer;
-        try {
+        if (process.env.RAILWAY_ENVIRONMENT || process.env.NODE_ENV === 'production') {
             puppeteer = require('puppeteer-core');
-        } catch (e) {
-            puppeteer = require('puppeteer');
+        } else {
+            try {
+                puppeteer = require('puppeteer');
+            } catch (e) {
+                puppeteer = require('puppeteer-core');
+            }
         }
 
         console.log('🌐 Launching browser...');

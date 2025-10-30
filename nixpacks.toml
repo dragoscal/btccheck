@@ -2,8 +2,14 @@
 nixPkgs = ["nodejs", "chromium"]
 
 [phases.install]
-cmds = ["npm install --production"]
+cmds = [
+  "export PUPPETEER_SKIP_CHROMIUM_DOWNLOAD=true",
+  "npm install --production --ignore-scripts"
+]
 
 [start]
 cmd = "node telegram_bot.js"
+
+[variables]
+PUPPETEER_SKIP_CHROMIUM_DOWNLOAD = "true"
 
