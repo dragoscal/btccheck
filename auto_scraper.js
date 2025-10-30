@@ -28,19 +28,11 @@ async function scrapeIasiATM(customUrl = null) {
             ]
         };
         
-        // Only set executablePath on Linux/Railway
+        // Set executablePath on Linux/Railway
         if (process.platform === 'linux') {
-            const possiblePaths = [
-                process.env.PUPPETEER_EXECUTABLE_PATH,
-                '/usr/bin/chromium',
-                '/usr/bin/chromium-browser',
-                'chromium',
-                'chromium-browser'
-            ];
-            
-            // Use the first available path
-            launchOptions.executablePath = possiblePaths.find(p => p) || 'chromium';
-            console.log(`Using Chromium at: ${launchOptions.executablePath}`);
+            // Nix installs chromium in the PATH, just use 'chromium'
+            launchOptions.executablePath = 'chromium';
+            console.log('Using Chromium from PATH');
         }
         
         browser = await puppeteer.launch(launchOptions);

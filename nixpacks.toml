@@ -1,26 +1,9 @@
 [phases.setup]
-nixPkgs = ["nodejs"]
-aptPkgs = [
-  "chromium",
-  "libnss3",
-  "libatk1.0-0",
-  "libatk-bridge2.0-0",
-  "libcups2",
-  "libgbm1",
-  "libasound2t64",
-  "libpangocairo-1.0-0",
-  "libxss1",
-  "libgtk-3-0"
-]
+nixPkgs = ["nodejs", "chromium"]
 
 [phases.install]
 cmds = ["npm install --production"]
 
 [start]
 cmd = "node telegram_bot.js"
-
-[variables]
-NODE_ENV = "production"
-PUPPETEER_SKIP_CHROMIUM_DOWNLOAD = "true"
-PUPPETEER_EXECUTABLE_PATH = "/usr/bin/chromium"
 
