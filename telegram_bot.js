@@ -362,8 +362,8 @@ Use /check to get the link, then send me the balance.`;
                 if (balance !== lastBalance) {
                     const change = balance - lastBalance;
                     
-                    // Only notify if money was ADDED (balance increased)
                     if (change > 0) {
+                        // Money ADDED (ATM refilled)
                         let message = `<b>💰 Money Added to ATM!</b>\n\n`;
                         message += `📍 Location: ${location}\n`;
                         message += `💵 Current Balance: ${balance.toLocaleString()} RON\n`;
@@ -376,13 +376,22 @@ Use /check to get the link, then send me the balance.`;
                             message += `\n\n🎉 <b>ATM Refilled!</b>`;
                         }
 
-                        // Send to GROUP
                         await this.sendMessage(message, 'HTML', true);
                         notificationSent = true;
                         console.log(`✅ Group notified: ${location} +${change} RON`);
+                        
                     } else if (change < 0) {
-                        // Money decreased (withdrawn) - just log, don't notify
-                        console.log(`ℹ️  ${location}: ${Math.abs(change)} RON withdrawn`);
+                        // Money WITHDRAWN (balance decreased)
+                        let message = `<b>💸 Money Withdrawn from ATM</b>\n\n`;
+                        message += `📍 Location: ${location}\n`;
+                        message += `💵 Current Balance: ${balance.toLocaleString()} RON\n`;
+                        message += `📉 Withdrawn: ${Math.abs(change).toLocaleString()} RON\n`;
+                        message += `🕐 Time: ${new Date().toLocaleString('ro-RO')}`;
+                        message += `\n\n⬇️ Previous: ${lastBalance.toLocaleString()} RON`;
+
+                        await this.sendMessage(message, 'HTML', true);
+                        notificationSent = true;
+                        console.log(`✅ Group notified: ${location} -${Math.abs(change)} RON`);
                     }
                 }
 
