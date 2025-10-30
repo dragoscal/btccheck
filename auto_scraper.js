@@ -3,7 +3,13 @@
 async function scrapeIasiATM(customUrl = null) {
     let browser;
     try {
-        const puppeteer = require('puppeteer');
+        // Try puppeteer-core first (for Railway), fall back to puppeteer (for local)
+        let puppeteer;
+        try {
+            puppeteer = require('puppeteer-core');
+        } catch (e) {
+            puppeteer = require('puppeteer');
+        }
 
         console.log('🌐 Launching browser...');
         

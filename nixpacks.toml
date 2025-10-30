@@ -1,9 +1,14 @@
 [phases.setup]
-aptPkgs = ["chromium"]
+nixPkgs = ["nodejs", "chromium"]
 
 [phases.install]
-cmds = ["npm install"]
+cmds = ["npm install --production"]
 
 [start]
 cmd = "node telegram_bot.js"
+
+[variables]
+NODE_ENV = "production"
+PUPPETEER_SKIP_CHROMIUM_DOWNLOAD = "true"
+PUPPETEER_EXECUTABLE_PATH = "/usr/bin/chromium"
 
