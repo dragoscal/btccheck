@@ -15,12 +15,33 @@ class ATMTelegramBot {
         this.botToken = botToken;
         this.chatId = chatId; // Personal chat for commands
         this.groupChatId = groupChatId || chatId; // Group for notifications (defaults to personal)
-        this.lastBalanceFile = 'last_balance.json';
+        this.lastBalanceFile = process.env.DATA_DIR ? `${process.env.DATA_DIR}/last_balance.json` : './last_balance.json';
         this.atmUrl = 'https://www.bitomat.com/ro/bitomaty/bancomat-bitcoin-iasi-palas-mall';
         this.lastUpdateId = 0;
         this.checkInterval = 1 * 60 * 60 * 1000; // 1 hour in milliseconds
         this.lastCheck = 0;
         this.autoCheckEnabled = !!scrapeAllIasiATMs;
+        
+        // Ensure data directory exists
+        this.ensureDataDir();
+    }
+    
+    ensureDataDir() {
+        const fs = require('fs');
+        if (process.env.DATA_DIR) {
+            const dir = process.env.DATA_DIR;
+            if (!fs.existsSync(dir)) {
+                try {
+                    fs.mkdirSync(dir, { recursive: true });
+                    console.log(`📁 Created data directory: ${dir}`);
+                } catch (e) {
+                    console.log('⚠️  Could not create data directory, using current dir');
+                    this.lastBalanceFile = './last_balance.json';
+                }
+            }
+        } else {
+            console.log('ℹ️  Using current directory for storage');
+        }
     }
 
     // Send message via Telegram
@@ -120,32 +141,37 @@ class ATMTelegramBot {
         });
     }
 
-    // Load last balance
+    // Load last balance (multi-location format)
     loadLastBalance() {
         try {
             if (fs.existsSync(this.lastBalanceFile)) {
                 const data = fs.readFileSync(this.lastBalanceFile, 'utf8');
-                return JSON.parse(data);
+                const parsed = JSON.parse(data);
+                
+                // Convert old format to new if needed
+                if (parsed.balance !== undefined && parsed.location) {
+                    console.log('⚠️  Converting old format to new multi-location format');
+                    return { [parsed.location]: parsed.balance };
+                }
+                
+                return parsed;
             }
         } catch (error) {
             console.error('Error loading balance:', error.message);
         }
-        return { balance: 0, location: 'Iași Palas Mall', timestamp: null };
+        return {}; // Return empty object for multi-location format
     }
 
-    // Save balance
-    saveBalance(balance) {
+    // Save balances (multi-location format)
+    saveAllBalances(balancesData) {
         try {
-            const data = {
-                balance: balance,
-                location: 'Iași Palas Mall',
-                timestamp: new Date().toISOString()
-            };
-            fs.writeFileSync(this.lastBalanceFile, JSON.stringify(data, null, 2));
-            return data;
+            fs.writeFileSync(this.lastBalanceFile, JSON.stringify(balancesData, null, 2));
+            console.log(`💾 Saved all balances to ${this.lastBalanceFile}`);
+            Object.keys(balancesData).forEach(location => {
+                console.log(`   ${location}: ${balancesData[location]} RON`);
+            });
         } catch (error) {
-            console.error('Error saving balance:', error.message);
-            return null;
+            console.error('❌ Error saving balances:', error.message);
         }
     }
 
@@ -213,6 +239,8 @@ Example: <code>/balance 150</code>
             let totalBalance = 0;
             let availableCount = 0;
 
+            const lastData = this.loadLastBalance();
+            
             for (const result of results) {
                 message += `📍 <b>${result.location}</b>\n`;
                 
@@ -226,17 +254,16 @@ Example: <code>/balance 150</code>
                     }
                     message += `\n`;
                     
-                    // Save this balance
-                    const lastData = this.loadLastBalance();
+                    // Update balance in memory
                     lastData[result.location] = result.balance;
-                    try {
-                        require('fs').writeFileSync(this.lastBalanceFile, JSON.stringify(lastData, null, 2));
-                    } catch (e) {}
                 } else {
                     message += `   ❌ Could not check\n`;
                 }
                 message += `\n`;
             }
+            
+            // Save all balances at once
+            this.saveAllBalances(lastData);
 
             message += `📊 <b>Total: ${totalBalance.toLocaleString()} RON</b>`;
             if (availableCount > 0) {
@@ -251,67 +278,29 @@ Example: <code>/balance 150</code>
         }
     }
 
-    // Handle /balance command
-    async handleBalance(amount) {
-        const balance = parseInt(amount);
-        
-        if (isNaN(balance) || balance < 0) {
-            await this.sendMessage('❌ Invalid amount. Use: /balance 150\n(or /balance 0 if no balance)');
-            return;
-        }
-
-        const lastData = this.loadLastBalance();
-        const lastBalance = lastData.balance || 0;
-
-        this.saveBalance(balance);
-
-        let message = `<b>✅ Balance Updated</b>\n\n`;
-        message += `📍 Location: Iași Palas Mall\n`;
-        message += `💰 Current Balance: ${balance} RON\n`;
-        message += `🕐 Time: ${new Date().toLocaleString('ro-RO')}`;
-
-        if (lastBalance > 0 && balance !== lastBalance) {
-            const change = balance - lastBalance;
-            const emoji = change > 0 ? '📈' : '📉';
-            message += `\n\n${emoji} <b>Change Detected!</b>`;
-            message += `\nPrevious: ${lastBalance} RON`;
-            message += `\nDifference: ${change > 0 ? '+' : ''}${change} RON`;
-        } else if (lastBalance === 0 && balance > 0) {
-            message += `\n\n🎉 <b>Balance Available!</b>`;
-        } else if (balance === lastBalance) {
-            message += `\n\nℹ️ No change from last check.`;
-        }
-
-        await this.sendMessage(message);
-    }
 
     // Handle /status command
     async handleStatus() {
         const data = this.loadLastBalance();
         
-        let message = `<b>📊 Current Status</b>\n\n`;
-        message += `📍 Location: ${data.location}\n`;
-        message += `💰 Balance: ${data.balance} RON\n`;
+        let message = `<b>📊 Current Status - All Locations</b>\n\n`;
         
-        if (data.timestamp) {
-            const lastCheck = new Date(data.timestamp);
-            const now = new Date();
-            const diffMs = now - lastCheck;
-            const diffMins = Math.floor(diffMs / 60000);
-            const diffHours = Math.floor(diffMins / 60);
-            
-            message += `🕐 Last Updated: ${lastCheck.toLocaleString('ro-RO')}\n`;
-            
-            if (diffHours > 0) {
-                message += `⏱️ Time Since: ${diffHours}h ${diffMins % 60}m ago`;
-            } else {
-                message += `⏱️ Time Since: ${diffMins}m ago`;
-            }
+        if (Object.keys(data).length === 0) {
+            message += `⚠️ No data yet. Use /check to start monitoring!`;
         } else {
-            message += `\n⚠️ No data yet. Use /check to start!`;
+            let totalBalance = 0;
+            
+            Object.keys(data).forEach(location => {
+                const balance = data[location];
+                message += `📍 <b>${location}</b>\n`;
+                message += `   💰 ${balance.toLocaleString()} RON\n\n`;
+                totalBalance += balance;
+            });
+            
+            message += `📊 <b>Total: ${totalBalance.toLocaleString()} RON</b>\n`;
+            message += `🕐 Last Check: Just now\n`;
+            message += `⏰ Next Check: In ~1 hour`;
         }
-
-        message += `\n\n🔗 <a href="${this.atmUrl}">Check ATM Now</a>`;
 
         await this.sendMessage(message);
     }
@@ -402,9 +391,7 @@ Use /check to get the link, then send me the balance.`;
             }
 
             // Save updated balances
-            try {
-                require('fs').writeFileSync(this.lastBalanceFile, JSON.stringify(lastData, null, 2));
-            } catch (e) {}
+            this.saveAllBalances(lastData);
 
             if (notificationSent) {
                 console.log('✅ Balance notifications sent');
